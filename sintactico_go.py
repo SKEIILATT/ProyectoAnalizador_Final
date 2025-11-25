@@ -5,16 +5,17 @@ Integrantes:
 - Jair Palaguachi (JairPalaguachi)
 - Javier Gutiérrez (SKEIILATT)
 - Leonardo Macías (leodamac)
+
+REFACTORIZADO PARA SOPORTAR API REST
 """
 
 import ply.yacc as yacc
-from lexico_go import tokens, lexer
+import ply.lex as lex
+import lexico_go  # Importar el módulo completo
+from lexico_go import tokens  # Los tokens son necesarios para yacc
 from datetime import datetime
 import sys
 import os
-
-# Variables globales para logging
-log_errors = []
 
 # Definir precedencia de operadores
 precedence = (
@@ -545,21 +546,40 @@ def p_empty(p):
     pass
 
 # ============================================================================
-# MANEJO DE ERRORES SINTÁCTICOS
+# MANEJO DE ERRORES SINTÁCTICOS - MODIFICADO PARA USAR PARSER
 # ============================================================================
 
 def p_error(p):
-    global log_errors
     if p:
-        error_msg = f"Error de sintaxis en '{p.value}' (Token: {p.type}, Línea: {p.lineno})"
-        print(error_msg)
-        log_errors.append(error_msg)
+        error_obj = {
+            'message': f"Error de sintaxis en '{p.value}'",
+            'token': p.type,
+            'line': p.lineno
+        }
+        # Guardar en el parser
+        if hasattr(p.parser, 'errors_list'):
+            p.parser.errors_list.append(error_obj)
+        
+        print(f"Error de sintaxis en '{p.value}' (Token: {p.type}, Línea: {p.lineno})")
         # Intentar recuperarse
-        parser.errok()
+        p.parser.errok()
     else:
-        error_msg = "Error de sintaxis: fin de archivo inesperado"
-        print(error_msg)
-        log_errors.append(error_msg)
+        error_obj = {
+            'message': "Error de sintaxis: fin de archivo inesperado",
+            'token': 'EOF',
+            'line': 0
+        }
+        # Guardar en el parser si existe
+        import inspect
+        frame = inspect.currentframe()
+        if frame and frame.f_back:
+            local_vars = frame.f_back.f_locals
+            if 'parser' in local_vars:
+                parser_obj = local_vars['parser']
+                if hasattr(parser_obj, 'errors_list'):
+                    parser_obj.errors_list.append(error_obj)
+        
+        print("Error de sintaxis: fin de archivo inesperado")
 
 # ============================================================================
 # CONSTRUCCIÓN DEL PARSER
@@ -568,16 +588,42 @@ def p_error(p):
 parser = yacc.yacc()
 
 # ============================================================================
-# FUNCIONES DE ANÁLISIS Y LOGGING
+# NUEVA FUNCIÓN: Para usar en API REST
+# ============================================================================
+
+def analyze_syntax_string(code_string):
+    """
+    Analiza sintácticamente código Go recibido como string (para API).
+    """
+    # Crear nuevo lexer para esta petición
+    new_lexer = lex.lex(module=lexico_go)
+    
+    # Inicializar lista de errores en el parser
+    parser.errors_list = []
+    
+    # Parsear con el nuevo lexer
+    try:
+        parser.parse(code_string, lexer=new_lexer)
+    except Exception as e:
+        parser.errors_list.append({
+            'message': f"Error crítico durante el análisis: {str(e)}",
+            'token': 'CRITICAL',
+            'line': 0
+        })
+    
+    # Devolver errores estructurados
+    return {
+        'errors': parser.errors_list
+    }
+
+# ============================================================================
+# FUNCIÓN ORIGINAL: Para usar en CLI 
 # ============================================================================
 
 def analyze_file(filename):
     """
     Analiza sintácticamente un archivo de código Go.
     """
-    global log_errors
-    log_errors = []
-    
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             data = file.read()
@@ -592,24 +638,24 @@ def analyze_file(filename):
     print(f"ANÁLISIS SINTÁCTICO DEL ARCHIVO: {filename}")
     print(f"{'='*80}\n")
     
-    # Realizar el análisis sintáctico
-    result = parser.parse(data, lexer=lexer)
+    # Usar la nueva función para hacer el análisis
+    result = analyze_syntax_string(data)
     
     # Resumen
     print(f"\n{'='*80}")
     print(f"RESUMEN DEL ANÁLISIS SINTÁCTICO")
     print(f"{'='*80}")
-    print(f"Total de errores encontrados: {len(log_errors)}")
+    print(f"Total de errores encontrados: {len(result['errors'])}")
     
-    if log_errors:
+    if result['errors']:
         print(f"\n{'='*80}")
         print(f"ERRORES SINTÁCTICOS")
         print(f"{'='*80}")
-        for error in log_errors:
-            print(error)
+        for error in result['errors']:
+            print(f"{error['message']} (Token: {error['token']}, Línea: {error['line']})")
     
     # Generar archivo de log
-    generate_log(filename)
+    generate_log(filename, result)
 
 def get_git_username():
     """
@@ -632,7 +678,7 @@ def get_git_username():
     except:
         return 'usuario'
 
-def generate_log(source_filename):
+def generate_log(source_filename, analysis_result):
     """
     Genera un archivo de log con los errores sintácticos encontrados.
     """
@@ -659,11 +705,11 @@ def generate_log(source_filename):
         log_file.write(f"Usuario: {git_user}\n")
         log_file.write("="*80 + "\n\n")
         
-        log_file.write(f"ERRORES SINTÁCTICOS ENCONTRADOS ({len(log_errors)})\n")
+        log_file.write(f"ERRORES SINTÁCTICOS ENCONTRADOS ({len(analysis_result['errors'])})\n")
         log_file.write("-"*80 + "\n")
-        if log_errors:
-            for error in log_errors:
-                log_file.write(error + "\n")
+        if analysis_result['errors']:
+            for error in analysis_result['errors']:
+                log_file.write(f"{error['message']} (Token: {error['token']}, Línea: {error['line']})\n")
         else:
             log_file.write("No se encontraron errores sintácticos.\n")
         

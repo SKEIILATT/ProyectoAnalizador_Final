@@ -270,10 +270,13 @@ t_ignore = ' \t'
 
 # Manejo de errores
 def t_error(t):
-    error_msg = f"Carácter ilegal '{t.value[0]}' en línea {t.lineno}, columna {find_column(t)}"
-    print(error_msg)
-    log_errors.append(error_msg)
-    t.lexer.skip(1)
+    error_obj = {
+        'char': t.value[0],
+        'line': t.lineno,
+        'column': column,
+        'message': f"Carácter ilegal '{t.value[0]}'"
+    }
+    t.lexer.errors_list.append(error_obj)
 
 # ============================================================================
 # FIN CONTRIBUCIÓN COMPARTIDA
@@ -281,31 +284,48 @@ def t_error(t):
 
 # Función auxiliar para encontrar la columna
 def find_column(token):
-    line_start = lexer_data.rfind('\n', 0, token.lexpos) + 1
-    return (token.lexpos - line_start) + 1
+    lexer_data = token.lexer.source_code 
 
-# Variables globales para logging
-log_tokens = []
-log_errors = []
-lexer_data = ""
 
-# Construcción del lexer
-lexer = lex.lex()
+
+# Nueva función para usar en el APIREST
+ 
+def analyze_code_string(code_string):
+    new_lexer = lex.lex()
+    new_lexer.tokens_list=[]
+    new_lexer.errors_list=[]
+    new_lexer.source_code = code_string
+    
+    new_lexer.lineno = 1
+    new_lexer.input(code_string)
+
+    while True:
+        tok = new_lexer.token()
+        if not tok:
+            break
+        column = find_column(tok)
+        token_obj = {
+            'type': tok.type,
+            'value': str(tok.value),
+            'line': tok.lineno,
+            'column': column
+        }
+        new_lexer.tokens_list.append(token_obj)
+    return {
+        'tokens': new_lexer.tokens_list,
+        'errors': new_lexer.errors_list
+    }
+
 
 def analyze_file(filename):
     """
     Analiza un archivo de código Go y genera un log con los tokens encontrados.
+    Esta función se mantiene para uso por línea de comandos.
     """
-    global log_tokens, log_errors, lexer_data
-    
-    log_tokens = []
-    log_errors = []
-    
     # Leer el archivo
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             data = file.read()
-            lexer_data = data
     except FileNotFoundError:
         print(f"Error: El archivo '{filename}' no fue encontrado.")
         return
@@ -313,43 +333,35 @@ def analyze_file(filename):
         print(f"Error al leer el archivo: {e}")
         return
     
-    # Reiniciar el lexer
-    lexer.lineno = 1
-    lexer.input(data)
+    # Usar la nueva función para hacer el análisis
+    result = analyze_code_string(data)
     
-    # Tokenizar
+    # Imprimir resultados 
     print(f"\n{'='*80}")
     print(f"ANÁLISIS LÉXICO DEL ARCHIVO: {filename}")
     print(f"{'='*80}\n")
     
-    token_count = 0
-    while True:
-        tok = lexer.token()
-        if not tok:
-            break
-        
-        token_count += 1
-        column = find_column(tok)
-        token_info = f"Token: {tok.type:20} | Valor: {str(tok.value):30} | Línea: {tok.lineno:4} | Columna: {column:4}"
+    token_count = len(result['tokens'])
+    for token in result['tokens']:
+        token_info = f"Token: {token['type']:20} | Valor: {token['value']:30} | Línea: {token['line']:4} | Columna: {token['column']:4}"
         print(token_info)
-        log_tokens.append(token_info)
     
     # Resumen
     print(f"\n{'='*80}")
     print(f"RESUMEN DEL ANÁLISIS")
     print(f"{'='*80}")
     print(f"Total de tokens reconocidos: {token_count}")
-    print(f"Total de errores encontrados: {len(log_errors)}")
+    print(f"Total de errores encontrados: {len(result['errors'])}")
     
-    if log_errors:
+    if result['errors']:
         print(f"\n{'='*80}")
         print(f"ERRORES ENCONTRADOS")
         print(f"{'='*80}")
-        for error in log_errors:
-            print(error)
+        for error in result['errors']:
+            print(f"Carácter ilegal '{error['char']}' en línea {error['line']}, columna {error['column']}")
     
     # Generar archivo de log
-    generate_log(filename)
+    generate_log(filename, result)
 
 def get_git_username():
     """

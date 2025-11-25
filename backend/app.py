@@ -9,8 +9,8 @@ import os
 
 ''' Importamos la función necesaría para el análisis de código '''
 from lexico_go import analyze_code_string
-from sintactico_go import analyze_sintactico
-from semantico_go import analyze_semantico
+from sintactico_go import analyze_syntax_string
+from semantico_go import analyze_semantic_string
 
 ''' Creamos la aplicación flask '''
 app = Flask(__name__)

@@ -1,0 +1,6 @@
+# Dependencias para el Analizador Léxico de Go
+# Proyecto: Implementación de un Analizador Léxico, Sintáctico y Semántico en Go
+# Integrantes: Jair Palaguachi, Javier Gutiérrez
+
+# PLY (Python Lex-Yacc) - Herramienta principal para análisis léxico y sintáctico
+ply>=3.11

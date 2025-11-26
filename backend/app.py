@@ -105,5 +105,56 @@ def analyze_file():
             'error': f'Error interno del servidor: {str(e)}'
         }), 500
 
+'''Creación del endpoint para analizar el archivo subido por el usuario'''
+@app.route('/api/analyze-file', methods=['POST'])
+def analyze_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({
+                'error': 'No se subió ningún archivo'
+            }), 400
+        file = request.files
+        
+        if file.filename == "":
+            return jsonify({
+                'error': 'Archivo sin nombre'
+            }), 400
+        if not file.filename.endswith(".go"):
+            return jsonify({
+                'error': 'El archivo debe tener extensión .go'
+            }), 400
+        code = file.read().decode('utf-8')
+        
+        lexico_result = analyze_lexico(code)
+        sintactico_result = analyze_sintactico(code)
+        semantico_result = analyze_semantico(code)
 
+        "Construimos la respuesta "
+        response = {
+            'lexico': {
+                'tokens': lexico_result['tokens'],
+                'errores': lexico_result['errors']
+            },
+            'sintactico': {
+                'errores': sintactico_result['errors']
+            },
+            'semantico': {
+                'errores': semantico_result['errors'],
+                'tabla_simbolos': semantico_result['symbol_table']
+            },
+            'filename': file.filename,
+            'code': code  
+        }
+        
+        return jsonify(response), 200
+    
+    except UnicodeDecodeError:
+        return jsonify({
+            'error': 'El archivo no está en formato UTF-8 válido'
+        }), 400
+    
+    except Exception as e:        
+        return jsonify({
+            'error': f'Error interno del servidor: {str(e)}'
+        }), 500
 

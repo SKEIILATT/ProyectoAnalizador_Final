@@ -17,7 +17,7 @@ app = Flask(__name__)
 CORS(app)
 
 '''Primer endpoint para analizar el código escrito en el editor'''
-@app.route('/api/analyze_code', methods=['POST'])
+@app.route('/api/analyze', methods=['POST'])
 def analyze_code():
     try:
         data = request.get_json()
@@ -33,8 +33,8 @@ def analyze_code():
         print(f"{'='*50}")
 
         lexico_result = analyze_code_string(code)
-        sintactico_result = analyze_sintactico(code)
-        semantico_result = analyze_semantico(code)
+        sintactico_result = analyze_syntax_string(code)
+        semantico_result = analyze_semantic_string(code)
 
         "Construyo las respuestas"
         response = {
@@ -73,9 +73,9 @@ def analyze_file():
             }), 400
         code = file.read().decode('utf-8')
                 
-        lexico_result = analyze_lexico(code)
-        sintactico_result = analyze_sintactico(code)
-        semantico_result = analyze_semantico(code)
+        lexico_result = analyze_code_string(code)
+        sintactico_result = analyze_syntax_string(code)
+        semantico_result = analyze_semantic_string(code)
         
         response = {
             'lexico': {
@@ -105,56 +105,5 @@ def analyze_file():
             'error': f'Error interno del servidor: {str(e)}'
         }), 500
 
-'''Creación del endpoint para analizar el archivo subido por el usuario'''
-@app.route('/api/analyze-file', methods=['POST'])
-def analyze_file():
-    try:
-        if 'file' not in request.files:
-            return jsonify({
-                'error': 'No se subió ningún archivo'
-            }), 400
-        file = request.files
-        
-        if file.filename == "":
-            return jsonify({
-                'error': 'Archivo sin nombre'
-            }), 400
-        if not file.filename.endswith(".go"):
-            return jsonify({
-                'error': 'El archivo debe tener extensión .go'
-            }), 400
-        code = file.read().decode('utf-8')
-        
-        lexico_result = analyze_lexico(code)
-        sintactico_result = analyze_sintactico(code)
-        semantico_result = analyze_semantico(code)
-
-        "Construimos la respuesta "
-        response = {
-            'lexico': {
-                'tokens': lexico_result['tokens'],
-                'errores': lexico_result['errors']
-            },
-            'sintactico': {
-                'errores': sintactico_result['errors']
-            },
-            'semantico': {
-                'errores': semantico_result['errors'],
-                'tabla_simbolos': semantico_result['symbol_table']
-            },
-            'filename': file.filename,
-            'code': code  
-        }
-        
-        return jsonify(response), 200
-    
-    except UnicodeDecodeError:
-        return jsonify({
-            'error': 'El archivo no está en formato UTF-8 válido'
-        }), 400
-    
-    except Exception as e:        
-        return jsonify({
-            'error': f'Error interno del servidor: {str(e)}'
-        }), 500
-
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)

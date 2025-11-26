@@ -6,18 +6,17 @@ Integrantes:
 - Javier Gutiérrez (SKEIILATT)
 - Leonardo Macías (leodamac)
 
-REFACTORIZADO PARA SOPORTAR API REST
 """
 
 import ply.yacc as yacc
 import ply.lex as lex
-import lexico_go  # Importar el módulo completo
-from lexico_go import tokens  # Los tokens son necesarios para yacc
+import lexico_go
+from lexico_go import tokens
 from datetime import datetime
 import sys
 import os
 
-# Definir precedencia de operadores
+# Precedencia de operadores
 precedence = (
     ('left', 'OR'),
     ('left', 'AND'),
@@ -31,20 +30,16 @@ precedence = (
 )
 
 # ============================================================================
-# REGLAS BÁSICAS DE ESTRUCTURA DEL PROGRAMA
+# REGLAS GRAMATICALES
 # ============================================================================
 
 def p_programa(p):
     '''programa : package_decl imports declaraciones'''
-    print("Programa analizado correctamente")
+    pass
 
 def p_package_decl(p):
     '''package_decl : PACKAGE ID'''
     pass
-
-# ============================================================================
-# IMPORTS - Soporta múltiples formas
-# ============================================================================
 
 def p_imports(p):
     '''imports : import_decl imports
@@ -63,10 +58,6 @@ def p_lista_imports(p):
                      | STRING_LITERAL'''
     pass
 
-# ============================================================================
-# DECLARACIONES A NIVEL DE PROGRAMA
-# ============================================================================
-
 def p_declaraciones(p):
     '''declaraciones : declaraciones declaracion
                      | declaracion'''
@@ -80,11 +71,6 @@ def p_declaracion(p):
                    | declaracion_const
                    | empty'''
     pass
-
-# ============================================================================
-# CONTRIBUCIÓN: Leonardo Macías (leodamac)
-# Sección: Declaraciones de Variables
-# ============================================================================
 
 def p_declaracion_var_global(p):
     '''declaracion_var_global : VAR ID tipo
@@ -127,15 +113,6 @@ def p_lista_ids(p):
                  | UNDERSCORE'''
     pass
 
-# ============================================================================
-# FIN CONTRIBUCIÓN: Leonardo Macías
-# ============================================================================
-
-# ============================================================================
-# CONTRIBUCIÓN: Javier Gutiérrez (SKEIILATT)
-# Sección: Asignaciones
-# ============================================================================
-
 def p_asignacion(p):
     '''asignacion : ID ASSIGN expresion
                   | ID PLUS_ASSIGN expresion
@@ -149,14 +126,6 @@ def p_asignacion(p):
 def p_asignacion_multiple(p):
     '''asignacion_multiple : lista_ids ASSIGN lista_expresiones'''
     pass
-
-# ============================================================================
-# FIN CONTRIBUCIÓN: Javier Gutiérrez
-# ============================================================================
-
-# ============================================================================
-# DECLARACIONES DE CONSTANTES
-# ============================================================================
 
 def p_declaracion_const(p):
     '''declaracion_const : CONST ID ASSIGN expresion
@@ -176,10 +145,6 @@ def p_decl_const_bloque(p):
     '''decl_const_bloque : ID ASSIGN expresion
                          | ID tipo ASSIGN expresion'''
     pass
-
-# ============================================================================
-# FUNCIONES
-# ============================================================================
 
 def p_funcion(p):
     '''funcion : FUNC ID LPAREN parametros RPAREN tipo_retorno bloque
@@ -220,10 +185,6 @@ def p_lista_tipos(p):
                    | tipo'''
     pass
 
-# ============================================================================
-# TIPOS DE DATOS
-# ============================================================================
-
 def p_tipo(p):
     '''tipo : ID
             | LBRACKET INT_LITERAL RBRACKET tipo
@@ -231,10 +192,6 @@ def p_tipo(p):
             | MAP LBRACKET tipo RBRACKET tipo
             | TIMES tipo'''
     pass
-
-# ============================================================================
-# BLOQUES Y SENTENCIAS
-# ============================================================================
 
 def p_bloque(p):
     '''bloque : LBRACE sentencias RBRACE
@@ -265,11 +222,6 @@ def p_sentencia(p):
                  | empty'''
     pass
 
-# ============================================================================
-# CONTRIBUCIÓN: Leonardo Macías (leodamac)
-# Sección: Estructura de Control IF-ELSE
-# ============================================================================
-
 def p_if_statement(p):
     '''if_statement : IF condicion bloque
                     | IF condicion bloque ELSE bloque
@@ -285,15 +237,6 @@ def p_declaracion_var_corta(p):
     '''declaracion_var_corta : ID DECLARE_ASSIGN expresion
                              | lista_ids DECLARE_ASSIGN expresion'''
     pass
-
-# ============================================================================
-# FIN CONTRIBUCIÓN: Leonardo Macías
-# ============================================================================
-
-# ============================================================================
-# CONTRIBUCIÓN: Javier Gutiérrez (SKEIILATT)
-# Sección: Estructura de Control FOR
-# ============================================================================
 
 def p_for_statement(p):
     '''for_statement : FOR condicion bloque
@@ -320,15 +263,6 @@ def p_incremento(p):
                   | empty'''
     pass
 
-# ============================================================================
-# FIN CONTRIBUCIÓN: Javier Gutiérrez
-# ============================================================================
-
-# ============================================================================
-# CONTRIBUCIÓN: Jair Palaguachi (JairPalaguachi)
-# Sección: Estructura de Control SWITCH
-# ============================================================================
-
 def p_switch_statement(p):
     '''switch_statement : SWITCH expresion LBRACE casos RBRACE
                         | SWITCH LBRACE casos RBRACE
@@ -345,38 +279,16 @@ def p_caso(p):
             | DEFAULT COLON sentencias'''
     pass
 
-# ============================================================================
-# FIN CONTRIBUCIÓN: Jair Palaguachi
-# ============================================================================
-
-# ============================================================================
-# CONTRIBUCIÓN: Leonardo Macías (leodamac)
-# Sección: Return Statement
-# ============================================================================
-
 def p_return_statement(p):
     '''return_statement : RETURN
                         | RETURN expresion
                         | RETURN lista_expresiones'''
     pass
 
-# ============================================================================
-# FIN CONTRIBUCIÓN: Leonardo Macías
-# ============================================================================
-
-# ============================================================================
-# IMPRESIÓN (Compartido)
-# ============================================================================
-
 def p_impresion(p):
     '''impresion : ID DOT ID LPAREN lista_expresiones RPAREN
                  | ID DOT ID LPAREN RPAREN'''
     pass
-
-# ============================================================================
-# CONTRIBUCIÓN: Jair Palaguachi (JairPalaguachi)
-# Sección: Expresiones Aritméticas y Lógicas
-# ============================================================================
 
 def p_expresion_binaria(p):
     '''expresion : expresion PLUS expresion
@@ -410,9 +322,6 @@ def p_expresion_unaria(p):
                  | BITAND expresion %prec ADDRESS
                  | TIMES expresion %prec POINTER'''
     pass
-# ============================================================================
-# FIN CONTRIBUCIÓN: Jair Palaguachi
-# ============================================================================
 
 def p_expresion_agrupada(p):
     '''expresion : LPAREN expresion RPAREN'''
@@ -427,10 +336,6 @@ def p_expresion_primaria(p):
                  | BOOL_LITERAL
                  | NIL'''
     pass
-
-# ============================================================================
-# FUNCIONES BUILT-IN Y LLAMADAS
-# ============================================================================
 
 def p_expresion_llamada(p):
     '''expresion : ID LPAREN lista_expresiones RPAREN
@@ -462,11 +367,6 @@ def p_expresion_new(p):
     '''expresion : ID DOT ID LPAREN STRING_LITERAL RPAREN'''
     pass
 
-# ============================================================================
-# CONTRIBUCIÓN: Leonardo Macías (leodamac)
-# Sección: Arrays - Acceso e Inicialización
-# ============================================================================
-
 def p_expresion_array_acceso(p):
     '''expresion : ID LBRACKET expresion RBRACKET'''
     pass
@@ -486,15 +386,6 @@ def p_fila_matriz(p):
     '''fila_matriz : LBRACE lista_expresiones RBRACE'''
     pass
 
-# ============================================================================
-# FIN CONTRIBUCIÓN: Leonardo Macías
-# ============================================================================
-
-# ============================================================================
-# CONTRIBUCIÓN: Javier Gutiérrez (SKEIILATT)
-# Sección: Slices
-# ============================================================================
-
 def p_slice_literal(p):
     '''expresion : LBRACKET RBRACKET tipo LBRACE lista_expresiones RBRACE
                  | LBRACKET RBRACKET tipo LBRACE RBRACE'''
@@ -506,15 +397,6 @@ def p_slice_operacion(p):
                  | ID LBRACKET expresion COLON RBRACKET
                  | ID LBRACKET COLON RBRACKET'''
     pass
-
-# ============================================================================
-# FIN CONTRIBUCIÓN: Javier Gutiérrez
-# ============================================================================
-
-# ============================================================================
-# CONTRIBUCIÓN: Jair Palaguachi (JairPalaguachi)
-# Sección: Maps
-# ============================================================================
 
 def p_map_literal(p):
     '''expresion : MAP LBRACKET tipo RBRACKET tipo LBRACE pares_mapa RBRACE
@@ -531,22 +413,17 @@ def p_par_mapa(p):
     '''par_mapa : expresion COLON expresion'''
     pass
 
-# ============================================================================
-# FIN CONTRIBUCIÓN: Jair Palaguachi
-# ============================================================================
-
 def p_lista_expresiones(p):
     '''lista_expresiones : lista_expresiones COMMA expresion
                          | expresion'''
     pass
 
-# Regla para producciones vacías
 def p_empty(p):
     '''empty :'''
     pass
 
 # ============================================================================
-# MANEJO DE ERRORES SINTÁCTICOS - MODIFICADO PARA USAR PARSER
+# MANEJO DE ERRORES 
 # ============================================================================
 
 def p_error(p):
@@ -556,12 +433,10 @@ def p_error(p):
             'token': p.type,
             'line': p.lineno
         }
-        # Guardar en el parser
+        
         if hasattr(p.parser, 'errors_list'):
             p.parser.errors_list.append(error_obj)
         
-        print(f"Error de sintaxis en '{p.value}' (Token: {p.type}, Línea: {p.lineno})")
-        # Intentar recuperarse
         p.parser.errok()
     else:
         error_obj = {
@@ -569,7 +444,7 @@ def p_error(p):
             'token': 'EOF',
             'line': 0
         }
-        # Guardar en el parser si existe
+        
         import inspect
         frame = inspect.currentframe()
         if frame and frame.f_back:
@@ -578,52 +453,44 @@ def p_error(p):
                 parser_obj = local_vars['parser']
                 if hasattr(parser_obj, 'errors_list'):
                     parser_obj.errors_list.append(error_obj)
-        
-        print("Error de sintaxis: fin de archivo inesperado")
 
-# ============================================================================
-# CONSTRUCCIÓN DEL PARSER
-# ============================================================================
-
+# Construir el parser
 parser = yacc.yacc()
 
 # ============================================================================
-# NUEVA FUNCIÓN: Para usar en API REST
+# Para usar en API REST
 # ============================================================================
 
 def analyze_syntax_string(code_string):
     """
     Analiza sintácticamente código Go recibido como string (para API).
     """
-    # Crear nuevo lexer para esta petición
+    # Crear nuevo lexer
     new_lexer = lex.lex(module=lexico_go)
     
-    # Inicializar lista de errores en el parser
+    # Inicializar lista de errores
     parser.errors_list = []
     
-    # Parsear con el nuevo lexer
+    # Parsear
     try:
         parser.parse(code_string, lexer=new_lexer)
     except Exception as e:
         parser.errors_list.append({
-            'message': f"Error crítico durante el análisis: {str(e)}",
+            'message': f"Error crítico: {str(e)}",
             'token': 'CRITICAL',
             'line': 0
         })
     
-    # Devolver errores estructurados
     return {
         'errors': parser.errors_list
     }
 
 # ============================================================================
-# FUNCIÓN ORIGINAL: Para usar en CLI 
+# Para usar en CLI
 # ============================================================================
 
 def analyze_file(filename):
-    """
-    Analiza sintácticamente un archivo de código Go.
-    """
+    """Analiza sintácticamente un archivo de código Go."""
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             data = file.read()
@@ -638,10 +505,8 @@ def analyze_file(filename):
     print(f"ANÁLISIS SINTÁCTICO DEL ARCHIVO: {filename}")
     print(f"{'='*80}\n")
     
-    # Usar la nueva función para hacer el análisis
     result = analyze_syntax_string(data)
     
-    # Resumen
     print(f"\n{'='*80}")
     print(f"RESUMEN DEL ANÁLISIS SINTÁCTICO")
     print(f"{'='*80}")
@@ -653,80 +518,10 @@ def analyze_file(filename):
         print(f"{'='*80}")
         for error in result['errors']:
             print(f"{error['message']} (Token: {error['token']}, Línea: {error['line']})")
-    
-    # Generar archivo de log
-    generate_log(filename, result)
-
-def get_git_username():
-    """
-    Obtiene el nombre de usuario de Git configurado localmente.
-    """
-    try:
-        import subprocess
-        result = subprocess.run(
-            ['git', 'config', 'user.name'],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            username = result.stdout.strip()
-            username = username.replace(' ', '')
-            return username
-        else:
-            return 'usuario'
-    except:
-        return 'usuario'
-
-def generate_log(source_filename, analysis_result):
-    """
-    Genera un archivo de log con los errores sintácticos encontrados.
-    """
-    # Crear carpeta de logs si no existe
-    if not os.path.exists('logs'):
-        os.makedirs('logs')
-    
-    # Obtener información del usuario de git
-    git_user = get_git_username()
-    
-    # Generar nombre del archivo de log
-    now = datetime.now()
-    base = os.path.splitext(os.path.basename(source_filename))[0]
-    timestamp = now.strftime('%d%m%Y-%Hh%M')
-    log_filename = f"logs/sintactico-{git_user}-{base}-{timestamp}.txt"
-    
-    # Escribir el log
-    with open(log_filename, 'w', encoding='utf-8') as log_file:
-        log_file.write("="*80 + "\n")
-        log_file.write(f"ANÁLISIS SINTÁCTICO - LENGUAJE GO\n")
-        log_file.write("="*80 + "\n")
-        log_file.write(f"Archivo analizado: {source_filename}\n")
-        log_file.write(f"Fecha y hora: {now.strftime('%d/%m/%Y %H:%M:%S')}\n")
-        log_file.write(f"Usuario: {git_user}\n")
-        log_file.write("="*80 + "\n\n")
-        
-        log_file.write(f"ERRORES SINTÁCTICOS ENCONTRADOS ({len(analysis_result['errors'])})\n")
-        log_file.write("-"*80 + "\n")
-        if analysis_result['errors']:
-            for error in analysis_result['errors']:
-                log_file.write(f"{error['message']} (Token: {error['token']}, Línea: {error['line']})\n")
-        else:
-            log_file.write("No se encontraron errores sintácticos.\n")
-        
-        log_file.write("\n" + "="*80 + "\n")
-        log_file.write("FIN DEL ANÁLISIS SINTÁCTICO\n")
-        log_file.write("="*80 + "\n")
-    
-    print(f"\nLog generado exitosamente: {log_filename}")
-
-# ============================================================================
-# PUNTO DE ENTRADA
-# ============================================================================
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Uso: python sintactico_go.py <archivo.go>")
-        print("Ejemplo: python sintactico_go.py algoritmo1.go")
         sys.exit(1)
     
     filename = sys.argv[1]

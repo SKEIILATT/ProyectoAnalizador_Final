@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { type AnalysisResult } from '../services/types';
 import './Analyzer.css';
@@ -9,6 +9,8 @@ function Analyzer() {
   const [loading, setLoading] = useState<boolean>(false);
   const [filename, setFilename] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'errores' | 'tokens' | 'estructura'>('errores');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
 
   const analyzeCode = async () => {
     if (!code.trim()) {
@@ -91,6 +93,12 @@ function Analyzer() {
     );
   };
 
+  const handleScroll = () => {
+    if (lineNumbersRef.current && textareaRef.current) {
+      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
+  };
+
   return (
     <div className="analyzer-container">
       {/* HEADER */}
@@ -143,14 +151,20 @@ function Analyzer() {
         <div className="editor-panel">
           <h3>Editor de Código</h3>
           <div className="editor-wrapper">
-            <div className="line-numbers">
+            <div
+              className="line-numbers"
+              ref={lineNumbersRef}
+            >
               {code.split('\n').map((_, index) => (
                 <div key={index}>{index + 1}</div>
               ))}
             </div>
             <textarea
+              ref={textareaRef}
               value={code}
               onChange={(e) => setCode(e.target.value)}
+              onScroll={handleScroll}
+              wrap="off"                       
               placeholder="// Escribe o pega tu código Go aquí&#10;package main&#10;&#10;import &quot;fmt&quot;&#10;&#10;func main() {&#10;    fmt.Println(&quot;Hola, mundo!&quot;)&#10;}"
               disabled={loading}
               spellCheck={false}

@@ -94,7 +94,7 @@ pip install -r requirements.txt
 
 1. Navega a la carpeta del frontend:
 ```bash
-cd frontend/AnalizadorFinal
+cd frontend/
 ```
 
 2. Instala las dependencias:
@@ -115,7 +115,7 @@ El servidor estará disponible en `http://localhost:5000`
 
 ### Iniciar el Frontend
 
-Desde la carpeta `frontend/AnalizadorFinal`:
+Desde la carpeta `frontend/`:
 ```bash
 npm run dev
 ```

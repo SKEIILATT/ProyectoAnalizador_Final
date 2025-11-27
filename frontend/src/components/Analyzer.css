@@ -137,6 +137,7 @@ flex-shrink: 0;
 display: flex;
 flex: 1;
 min-height: 0;
+height: 100%; 
 }
 
 .line-numbers {
@@ -149,30 +150,35 @@ line-height: 1.5;
 text-align: right;
 user-select: none;
 border-right: 1px solid #e0e0e0;
-overflow-y: auto;
 flex-shrink: 0;
+height: 100%;           
+overflow: hidden;       
+box-sizing: border-box; 
 }
 
 .line-numbers div {
-height: 21px;
+  line-height: 21px;     
+  height: auto;
 }
 
 .editor-panel textarea {
-flex: 1;
-padding: 15px;
-border: none;
-font-family: 'Courier New', monospace;
-font-size: 14px;
-line-height: 1.5;
-resize: none;
-outline: none;
-background-color: white;
-color: #333;
-overflow-y: auto;
-}
-
-.editor-panel textarea::placeholder {
-color: #999;
+  flex: 1;
+  padding: 15px;
+  border: none;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 21px;
+  white-space: pre;
+  overflow-x: auto;
+  overflow-y: auto;
+  resize: none;
+  outline: none;
+  background-color: white;
+  color: #333;
+  height: 100%;
+  box-sizing: border-box;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 /* RESULTS PANEL */

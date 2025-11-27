@@ -20,7 +20,7 @@ function Analyzer() {
 
     setLoading(true);
     try {
-      const response = await axios.post<AnalysisResult>('http://localhost:5000/api/analyze', {
+      const response = await axios.post<AnalysisResult>('/api/analyze', {
         code: code
       });
       setResults(response.data);
@@ -46,7 +46,7 @@ function Analyzer() {
       formData.append('file', file);
 
       const response = await axios.post<AnalysisResult>(
-        'http://localhost:5000/api/analyze-file',
+        'api/analyze-file',
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' }

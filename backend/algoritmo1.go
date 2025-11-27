@@ -38,7 +38,7 @@ func main() {
     const MAX_USUARIOS = 100
     
     // Uso de operadores aritméticos
-    suma := a + b
+    suma := a + b 
     resta := c - a
     multiplicacion := b * c
     division := edad / 5

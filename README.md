@@ -43,7 +43,7 @@ ProyectoAnalizador_Final/
 │   ├── algoritmo2.go           # Archivo de prueba
 │   └── algoritmo3.go           # Archivo de prueba
 │
-└── frontend/AnalizadorFinal/
+└── frontend/
     ├── src/
     │   ├── components/
     │   │   ├── Analyzer.tsx    # Componente principal
@@ -94,7 +94,7 @@ pip install -r requirements.txt
 
 1. Navega a la carpeta del frontend:
 ```bash
-cd frontend/
+cd frontend
 ```
 
 2. Instala las dependencias:
@@ -115,7 +115,7 @@ El servidor estará disponible en `http://localhost:5000`
 
 ### Iniciar el Frontend
 
-Desde la carpeta `frontend/`:
+Desde la carpeta `frontend`:
 ```bash
 npm run dev
 ```

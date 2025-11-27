@@ -20,7 +20,7 @@ import os
 # ============================================================================
 
 class Symbol:
-    def __init__(self, name, symbol_type, value=None, scope='global', line=0, is_const=False, return_type=None):
+    def __init__(self, name, symbol_type, value=None, scope='global', line=0, is_const=False, return_type=None, params=None):
         self.name = name
         self.symbol_type = symbol_type
         self.value = value
@@ -28,6 +28,7 @@ class Symbol:
         self.line = line
         self.is_const = is_const
         self.return_type = return_type
+        self.params = params if params is not None else []  # Lista de tipos de parámetros
 
 class SymbolTable:
     def __init__(self):
@@ -205,7 +206,20 @@ def p_decl_var_bloque(p):
     '''decl_var_bloque : ID tipo
                        | ID tipo ASSIGN expresion
                        | ID ASSIGN expresion'''
-    pass
+    global _symbol_table
+    var_name = p[1]
+    line = p.lineno(1)
+
+    if _symbol_table.lookup_current_scope(var_name):
+        add_error(f"Variable '{var_name}' ya declarada", line)
+    else:
+        if len(p) == 3:  # ID tipo
+            _symbol_table.insert(Symbol(var_name, p[2], None, 'global', line))
+        elif len(p) == 4:  # ID ASSIGN expresion
+            expr_type = p[3].get('type') if isinstance(p[3], dict) else 'int'
+            _symbol_table.insert(Symbol(var_name, expr_type, None, 'global', line))
+        else:  # ID tipo ASSIGN expresion (len == 5)
+            _symbol_table.insert(Symbol(var_name, p[2], None, 'global', line))
 
 def p_declaracion_var(p):
     '''declaracion_var : VAR ID tipo
@@ -243,11 +257,12 @@ def p_funcion_header(p):
     func_name = p[2]
     line = p.lineno(2)
     return_type = p[6] if len(p) == 7 else 'void'
+    params = p[4] if p[4] is not None else []
 
     if not _symbol_table.lookup_current_scope(func_name):
-        _symbol_table.insert(Symbol(func_name, 'func', None, 'global', line, return_type=return_type))
+        _symbol_table.insert(Symbol(func_name, 'func', None, 'global', line, return_type=return_type, params=params))
 
-    _current_function = {'name': func_name, 'return_type': return_type, 'line': line}
+    _current_function = {'name': func_name, 'return_type': return_type, 'line': line, 'params': params}
     _symbol_table.enter_scope()
 
 def p_bloque(p):
@@ -288,14 +303,42 @@ def p_declaracion_var_multiple(p):
     '''declaracion_var_multiple : VAR lista_ids tipo
                                 | VAR lista_ids tipo ASSIGN lista_expresiones
                                 | lista_ids DECLARE_ASSIGN lista_expresiones'''
-    pass
+    global _symbol_table
+
+    if p[1] == 'var':
+        # Casos: VAR lista_ids tipo o VAR lista_ids tipo ASSIGN lista_expresiones
+        ids = p[2] if isinstance(p[2], list) else [p[2]]
+        var_type = p[3]
+        line = p.lineno(1)
+
+        for var_id in ids:
+            if var_id != '_':
+                if _symbol_table.lookup_current_scope(var_id):
+                    add_error(f"Variable '{var_id}' ya declarada", line)
+                else:
+                    _symbol_table.insert(Symbol(var_id, var_type, None, 'local', line))
+    else:
+        # Caso: lista_ids DECLARE_ASSIGN lista_expresiones
+        ids = p[1] if isinstance(p[1], list) else [p[1]]
+        line = p.lineno(2)
+
+        for var_id in ids:
+            if var_id != '_':
+                if _symbol_table.lookup_current_scope(var_id):
+                    add_error(f"Variable '{var_id}' ya declarada", line)
+                else:
+                    # Asumimos tipo int por defecto para declaraciones cortas sin tipo explícito
+                    _symbol_table.insert(Symbol(var_id, 'int', None, 'local', line))
 
 def p_lista_ids(p):
     '''lista_ids : lista_ids COMMA ID
                  | lista_ids COMMA UNDERSCORE
                  | ID
                  | UNDERSCORE'''
-    pass
+    if len(p) == 4:  # lista_ids COMMA ID/UNDERSCORE
+        p[0] = p[1] + [p[3]]
+    else:  # ID o UNDERSCORE
+        p[0] = [p[1]]
 
 def p_asignacion_multiple(p):
     '''asignacion_multiple : lista_ids ASSIGN lista_expresiones'''
@@ -304,12 +347,15 @@ def p_asignacion_multiple(p):
 def p_parametros(p):
     '''parametros : lista_parametros
                   | empty'''
-    pass
+    p[0] = p[1] if p[1] is not None else []
 
 def p_lista_parametros(p):
     '''lista_parametros : lista_parametros COMMA parametro
                         | parametro'''
-    pass
+    if len(p) == 4:  # lista_parametros COMMA parametro
+        p[0] = p[1] + p[3] if p[3] is not None else p[1]
+    else:  # parametro
+        p[0] = p[1] if p[1] is not None else []
 
 def p_parametro(p):
     '''parametro : ID tipo
@@ -317,7 +363,39 @@ def p_parametro(p):
                  | ID ELLIPSIS tipo
                  | TIMES ID
                  | UNDERSCORE tipo'''
-    pass
+    global _symbol_table
+
+    if len(p) == 3:  # ID tipo o UNDERSCORE tipo
+        param_name = p[1]
+        param_type = p[2]
+        line = p.lineno(1)
+
+        if param_name != '_':
+            if _symbol_table.lookup_current_scope(param_name):
+                add_error(f"Parámetro '{param_name}' ya declarado", line)
+            else:
+                _symbol_table.insert(Symbol(param_name, param_type, None, 'parameter', line))
+
+        # Retornar lista con el tipo del parámetro
+        p[0] = [param_type]
+    elif len(p) == 5 and p[2] == ',':  # ID COMMA ID tipo (dos parámetros del mismo tipo)
+        param1 = p[1]
+        param2 = p[3]
+        param_type = p[4]
+        line = p.lineno(1)
+
+        for param_name in [param1, param2]:
+            if param_name != '_':
+                if _symbol_table.lookup_current_scope(param_name):
+                    add_error(f"Parámetro '{param_name}' ya declarado", line)
+                else:
+                    _symbol_table.insert(Symbol(param_name, param_type, None, 'parameter', line))
+
+        # Retornar lista con dos tipos (ambos del mismo tipo)
+        p[0] = [param_type, param_type]
+    else:
+        # Otros casos (ELLIPSIS, TIMES)
+        p[0] = ['unknown']
 
 def p_tipo_retorno(p):
     '''tipo_retorno : tipo
@@ -384,7 +462,28 @@ def p_for_statement(p):
                      | FOR UNDERSCORE COMMA ID DECLARE_ASSIGN RANGE expresion bloque
                      | FOR ID COMMA UNDERSCORE DECLARE_ASSIGN RANGE expresion bloque
                      | FOR UNDERSCORE COMMA UNDERSCORE DECLARE_ASSIGN RANGE expresion bloque'''
-    pass
+    global _symbol_table, _inside_loop
+
+    # Incrementar contador de loops
+    _inside_loop += 1
+
+    # Manejar for-range con declaración de variables
+    if len(p) >= 8 and 'RANGE' in [str(x) for x in p[1:]]:
+        # Buscar la posición de DECLARE_ASSIGN o ASSIGN
+        if p[4] == ':=' or (len(p) > 6 and p[6] == ':='):
+            # Declaración con :=
+            if p[2] != '_':  # Primera variable (índice)
+                line = p.lineno(2)
+                if not _symbol_table.lookup_current_scope(p[2]):
+                    _symbol_table.insert(Symbol(p[2], 'int', None, 'local', line))
+
+            if len(p) > 6 and p[4] == ',' and p[5] != '_':  # Segunda variable (valor)
+                line = p.lineno(5)
+                if not _symbol_table.lookup_current_scope(p[5]):
+                    # El tipo depende del tipo de la colección, asumimos int por simplicidad
+                    _symbol_table.insert(Symbol(p[5], 'int', None, 'local', line))
+
+    _inside_loop -= 1
 
 def p_inicializacion(p):
     '''inicializacion : declaracion_var
@@ -452,7 +551,34 @@ def p_expresion_binaria(p):
                  | expresion LSHIFT expresion
                  | expresion RSHIFT expresion
                  | expresion AND_NOT expresion'''
-    p[0] = {'type': 'bool' if p[2] in ['&&', '||', '==', '!=', '<', '<=', '>', '>='] else 'int'}
+
+    # Obtener tipos de los operandos
+    left_type = p[1].get('type', 'unknown') if isinstance(p[1], dict) else 'unknown'
+    right_type = p[3].get('type', 'unknown') if isinstance(p[3], dict) else 'unknown'
+    operator = p[2]
+
+    # Verificar compatibilidad de tipos
+    if left_type != 'unknown' and right_type != 'unknown':
+        if operator in ['<', '<=', '>', '>=', '==', '!=']:
+            # Operadores de comparación requieren tipos compatibles
+            if left_type != right_type:
+                # Verificar si son tipos numéricos compatibles
+                if not (left_type in NUMERIC_TYPES and right_type in NUMERIC_TYPES):
+                    add_error(f"No se puede comparar tipo '{left_type}' con tipo '{right_type}'", p.lineno(2))
+        elif operator in ['+', '-', '*', '/', '%']:
+            # Operadores aritméticos requieren tipos numéricos
+            if operator == '+' and (left_type == 'string' or right_type == 'string'):
+                # Concatenación de strings permitida
+                pass
+            elif left_type != right_type:
+                if not (left_type in NUMERIC_TYPES and right_type in NUMERIC_TYPES):
+                    add_error(f"Operación '{operator}' no válida entre tipo '{left_type}' y tipo '{right_type}'", p.lineno(2))
+        elif operator in ['&&', '||']:
+            # Operadores lógicos requieren bool
+            if left_type != 'bool' or right_type != 'bool':
+                add_error(f"Operador lógico '{operator}' requiere operandos de tipo bool", p.lineno(2))
+
+    p[0] = {'type': 'bool' if operator in ['&&', '||', '==', '!=', '<', '<=', '>', '>='] else left_type}
 
 def p_expresion_unaria(p):
     '''expresion : NOT expresion
@@ -502,7 +628,40 @@ def p_expresion_llamada(p):
                  | ID LPAREN RPAREN
                  | ID DOT ID LPAREN lista_expresiones RPAREN
                  | ID DOT ID LPAREN RPAREN'''
-    p[0] = {'type': 'void'}
+    global _symbol_table
+
+    # Determinar si es una llamada simple (ID(...)) o con punto (ID.ID(...))
+    if len(p) == 5:  # ID LPAREN ... RPAREN
+        func_name = p[1]
+        args = p[3] if p[3] is not None else []
+        line = p.lineno(1)
+
+        # Buscar la función en la tabla de símbolos
+        symbol = _symbol_table.lookup(func_name)
+        if symbol and symbol.symbol_type == 'func':
+            # Obtener tipos de los argumentos pasados
+            arg_types = [arg.get('type', 'unknown') for arg in args] if isinstance(args, list) else []
+
+            # Verificar número de argumentos
+            if len(arg_types) != len(symbol.params):
+                add_error(f"Función '{func_name}' espera {len(symbol.params)} argumentos, pero se pasaron {len(arg_types)}", line)
+            else:
+                # Verificar tipos de argumentos
+                for i, (arg_type, param_type) in enumerate(zip(arg_types, symbol.params)):
+                    if arg_type != 'unknown' and param_type != 'unknown':
+                        if arg_type != param_type:
+                            # Verificar si son tipos numéricos compatibles
+                            if not (arg_type in NUMERIC_TYPES and param_type in NUMERIC_TYPES):
+                                add_error(f"Argumento {i+1} de '{func_name}': se esperaba tipo '{param_type}', pero se recibió '{arg_type}'", line)
+
+            p[0] = {'type': symbol.return_type if symbol.return_type else 'void'}
+        elif not symbol:
+            # La función no está declarada (pero puede ser una función integrada)
+            p[0] = {'type': 'unknown'}
+        else:
+            p[0] = {'type': 'void'}
+    else:  # ID DOT ID LPAREN ... RPAREN (llamada con punto, como fmt.Println)
+        p[0] = {'type': 'void'}
 
 def p_expresion_make(p):
     '''expresion : MAKE LPAREN tipo RPAREN
@@ -576,7 +735,13 @@ def p_par_mapa(p):
 def p_lista_expresiones(p):
     '''lista_expresiones : lista_expresiones COMMA expresion
                          | expresion'''
-    pass
+    if len(p) == 4:  # lista_expresiones COMMA expresion
+        prev_list = p[1] if isinstance(p[1], list) else [p[1]]
+        expr_type = p[3].get('type', 'unknown') if isinstance(p[3], dict) else 'unknown'
+        p[0] = prev_list + [{'type': expr_type}]
+    else:  # expresion
+        expr_type = p[1].get('type', 'unknown') if isinstance(p[1], dict) else 'unknown'
+        p[0] = [{'type': expr_type}]
 
 def p_empty(p):
     '''empty :'''
@@ -585,7 +750,8 @@ def p_empty(p):
 def p_error(p):
     if p:
         add_error(f"Error de sintaxis en '{p.value}'", p.lineno)
-        p.parser.errok()
+        if hasattr(p, 'parser'):
+            p.parser.errok()
 
 # Construir parser
 parser = yacc.yacc()

@@ -434,10 +434,11 @@ def p_error(p):
             'line': p.lineno
         }
         
-        if hasattr(p.parser, 'errors_list'):
+        if hasattr(p, 'parser') and hasattr(p.parser, 'errors_list'):
             p.parser.errors_list.append(error_obj)
-        
-        p.parser.errok()
+
+        if hasattr(p, 'parser'):
+            p.parser.errok()
     else:
         error_obj = {
             'message': "Error de sintaxis: fin de archivo inesperado",

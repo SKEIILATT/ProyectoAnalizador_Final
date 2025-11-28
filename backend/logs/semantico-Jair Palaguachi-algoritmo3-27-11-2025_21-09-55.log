@@ -1,0 +1,131 @@
+
+================================================================================
+ANÁLISIS SEMÁNTICO DEL ARCHIVO: algoritmo3.go
+Fecha: 2025-11-27 21:09:55
+Usuario: Jair Palaguachi
+================================================================================
+
+
+================================================================================
+RESUMEN DEL ANÁLISIS SEMÁNTICO
+================================================================================
+Total de errores: 0
+
+================================================================================
+TABLA DE SÍMBOLOS
+================================================================================
+
+Ámbito nivel 0:
+  - Nombre: main
+    Tipo: func
+    Ámbito: global
+    Línea: 12
+    Constante: False
+    Tipo de retorno: void
+
+Ámbito nivel 1:
+  - Nombre: numeros
+    Tipo: composite
+    Ámbito: local
+    Línea: 14
+    Constante: False
+  - Nombre: diasSemana
+    Tipo: array
+    Ámbito: local
+    Línea: 21
+    Constante: False
+  - Nombre: matriz
+    Tipo: array
+    Ámbito: local
+    Línea: 22
+    Constante: False
+  - Nombre: lista
+    Tipo: composite
+    Ámbito: local
+    Línea: 29
+    Constante: False
+  - Nombre: nombres
+    Tipo: slice
+    Ámbito: local
+    Línea: 30
+    Constante: False
+  - Nombre: datos
+    Tipo: slice
+    Ámbito: local
+    Línea: 31
+    Constante: False
+  - Nombre: subslice
+    Tipo: slice
+    Ámbito: local
+    Línea: 36
+    Constante: False
+  - Nombre: edades
+    Tipo: slice
+    Ámbito: local
+    Línea: 44
+    Constante: False
+  - Nombre: precios
+    Tipo: map
+    Ámbito: local
+    Línea: 50
+    Constante: False
+  - Nombre: edad
+    Tipo: int
+    Ámbito: local
+    Línea: 65
+    Constante: False
+  - Nombre: existe
+    Tipo: int
+    Ámbito: local
+    Línea: 65
+    Constante: False
+  - Nombre: resultado
+    Tipo: unknown
+    Ámbito: local
+    Línea: 73
+    Constante: False
+  - Nombre: cociente
+    Tipo: int
+    Ámbito: local
+    Línea: 77
+    Constante: False
+  - Nombre: err
+    Tipo: int
+    Ámbito: local
+    Línea: 77
+    Constante: False
+  - Nombre: err2
+    Tipo: int
+    Ámbito: local
+    Línea: 85
+    Constante: False
+  - Nombre: s
+    Tipo: int
+    Ámbito: local
+    Línea: 91
+    Constante: False
+  - Nombre: p
+    Tipo: int
+    Ámbito: local
+    Línea: 91
+    Constante: False
+  - Nombre: total
+    Tipo: unknown
+    Ámbito: local
+    Línea: 95
+    Constante: False
+  - Nombre: promedioNotas
+    Tipo: unknown
+    Ámbito: local
+    Línea: 98
+    Constante: False
+  - Nombre: valor
+    Tipo: int
+    Ámbito: local
+    Línea: 102
+    Constante: False
+  - Nombre: puntero
+    Tipo: int
+    Ámbito: local
+    Línea: 103
+    Constante: False

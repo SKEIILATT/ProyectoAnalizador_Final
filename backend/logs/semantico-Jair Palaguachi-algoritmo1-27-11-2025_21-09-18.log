@@ -1,0 +1,40 @@
+
+================================================================================
+ANÁLISIS SEMÁNTICO DEL ARCHIVO: algoritmo1.go
+Fecha: 2025-11-27 21:09:18
+Usuario: Jair Palaguachi
+================================================================================
+
+
+================================================================================
+RESUMEN DEL ANÁLISIS SEMÁNTICO
+================================================================================
+Total de errores: 0
+
+================================================================================
+TABLA DE SÍMBOLOS
+================================================================================
+
+Ámbito nivel 0:
+  - Nombre: main
+    Tipo: func
+    Ámbito: global
+    Línea: 9
+    Constante: False
+    Tipo de retorno: void
+  - Nombre: x
+    Tipo: int
+    Ámbito: parameter
+    Línea: 71
+    Constante: False
+  - Nombre: y
+    Tipo: int
+    Ámbito: parameter
+    Línea: 71
+    Constante: False
+  - Nombre: calcular
+    Tipo: func
+    Ámbito: global
+    Línea: 71
+    Constante: False
+    Tipo de retorno: int

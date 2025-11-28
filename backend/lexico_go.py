@@ -12,6 +12,7 @@ import ply.lex as lex
 from datetime import datetime
 import sys
 import os
+import subprocess
 
 # Palabras reservadas de Go
 reserved = {
@@ -234,6 +235,17 @@ def analyze_code_string(code_string):
 # Para usar en CLI
 # ============================================================================
 
+def get_git_username():
+    """Obtiene el nombre de usuario de Git configurado localmente."""
+    try:
+        username = subprocess.check_output(
+            ['git', 'config', 'user.name'],
+            stderr=subprocess.DEVNULL
+        ).decode('utf-8').strip()
+        return username if username else 'usergit'
+    except:
+        return 'usergit'
+
 def analyze_file(filename):
     """Analiza un archivo de código Go (para CLI)."""
     try:
@@ -248,25 +260,53 @@ def analyze_file(filename):
     
     result = analyze_code_string(data)
     
-    print(f"\n{'='*80}")
-    print(f"ANÁLISIS LÉXICO DEL ARCHIVO: {filename}")
-    print(f"{'='*80}\n")
+    # Crear carpeta de logs si no existe
+    logs_dir = 'logs'
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
+    
+    # Obtener nombre de usuario de Git
+    git_username = get_git_username()
+    
+    # Extraer nombre del archivo sin extensión
+    file_base = os.path.splitext(os.path.basename(filename))[0]
+    
+    # Generar nombre del archivo de log: lexico-usergit-algoritmo#-fecha-hora.log
+    timestamp = datetime.now().strftime('%d-%m-%Y_%H-%M-%S')
+    log_filename = os.path.join(logs_dir, f'lexico-{git_username}-{file_base}-{timestamp}.log')
+    
+    # Preparar contenido del log
+    log_content = f"\n{'='*80}\n"
+    log_content += f"ANÁLISIS LÉXICO DEL ARCHIVO: {filename}\n"
+    log_content += f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    log_content += f"Usuario: {git_username}\n"
+    log_content += f"{'='*80}\n\n"
     
     for token in result['tokens']:
-        print(f"Token: {token['type']:20} | Valor: {token['value']:30} | Línea: {token['line']:4} | Columna: {token['column']:4}")
+        log_content += f"Token: {token['type']:20} | Valor: {token['value']:30} | Línea: {token['line']:4} | Columna: {token['column']:4}\n"
     
-    print(f"\n{'='*80}")
-    print(f"RESUMEN DEL ANÁLISIS")
-    print(f"{'='*80}")
-    print(f"Total de tokens reconocidos: {len(result['tokens'])}")
-    print(f"Total de errores encontrados: {len(result['errors'])}")
+    log_content += f"\n{'='*80}\n"
+    log_content += f"RESUMEN DEL ANÁLISIS\n"
+    log_content += f"{'='*80}\n"
+    log_content += f"Total de tokens reconocidos: {len(result['tokens'])}\n"
+    log_content += f"Total de errores encontrados: {len(result['errors'])}\n"
     
     if result['errors']:
-        print(f"\n{'='*80}")
-        print(f"ERRORES ENCONTRADOS")
-        print(f"{'='*80}")
+        log_content += f"\n{'='*80}\n"
+        log_content += f"ERRORES ENCONTRADOS\n"
+        log_content += f"{'='*80}\n"
         for error in result['errors']:
-            print(f"Carácter ilegal '{error['char']}' en línea {error['line']}, columna {error['column']}")
+            log_content += f"Carácter ilegal '{error['char']}' en línea {error['line']}, columna {error['column']}\n"
+    
+    # Escribir en archivo de log
+    try:
+        with open(log_filename, 'w', encoding='utf-8') as log_file:
+            log_file.write(log_content)
+        print(log_content)
+        print(f"\n✓ Log guardado en: {log_filename}")
+    except Exception as e:
+        print(f"Error al guardar el log: {e}")
+        print(log_content)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

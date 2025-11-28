@@ -1,0 +1,61 @@
+
+================================================================================
+ANÁLISIS SEMÁNTICO DEL ARCHIVO: algoritmo2.go
+Fecha: 2025-11-27 21:09:37
+Usuario: Jair Palaguachi
+================================================================================
+
+
+================================================================================
+RESUMEN DEL ANÁLISIS SEMÁNTICO
+================================================================================
+Total de errores: 6
+
+================================================================================
+ERRORES SEMÁNTICOS
+================================================================================
+Línea 35: Variable 'valor' no declarada
+Línea 36: Variable 'valor' no declarada
+Línea 64: Variable 'valor' no declarada
+Línea 65: Variable 'indice' no declarada
+Línea 65: Variable 'valor' no declarada
+Línea 94: Variable 'resultado' no declarada
+
+================================================================================
+TABLA DE SÍMBOLOS
+================================================================================
+
+Ámbito nivel 0:
+  - Nombre: main
+    Tipo: func
+    Ámbito: global
+    Línea: 9
+    Constante: False
+    Tipo de retorno: void
+  - Nombre: nota1
+    Tipo: int
+    Ámbito: parameter
+    Línea: 114
+    Constante: False
+  - Nombre: nota2
+    Tipo: int
+    Ámbito: parameter
+    Línea: 114
+    Constante: False
+  - Nombre: calcularPromedio
+    Tipo: func
+    Ámbito: global
+    Línea: 114
+    Constante: False
+    Tipo de retorno: int
+  - Nombre: puntos
+    Tipo: int
+    Ámbito: parameter
+    Línea: 118
+    Constante: False
+  - Nombre: evaluarNota
+    Tipo: func
+    Ámbito: global
+    Línea: 118
+    Constante: False
+    Tipo de retorno: int

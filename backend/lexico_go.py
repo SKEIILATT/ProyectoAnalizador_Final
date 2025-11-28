@@ -160,8 +160,8 @@ def t_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
 
-# Espacios y tabulaciones
-t_ignore = ' \t'
+# Espacios, tabulaciones y retornos de carro (Windows)
+t_ignore = ' \t\r'
 
 # Manejo de errores - CORREGIDO
 def t_error(t):

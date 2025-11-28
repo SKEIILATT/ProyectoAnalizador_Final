@@ -748,10 +748,10 @@ def p_empty(p):
     pass
 
 def p_error(p):
-    if p:
-        add_error(f"Error de sintaxis en '{p.value}'", p.lineno)
-        if hasattr(p, 'parser'):
-            p.parser.errok()
+    # No agregamos errores de sintaxis aquí ya que eso lo maneja sintactico_go.py
+    # Solo manejamos la recuperación del parser
+    if p and hasattr(p, 'parser'):
+        p.parser.errok()
 
 # Construir parser
 parser = yacc.yacc()

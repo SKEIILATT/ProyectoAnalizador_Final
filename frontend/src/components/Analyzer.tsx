@@ -46,7 +46,7 @@ function Analyzer() {
       formData.append('file', file);
 
       const response = await axios.post<AnalysisResult>(
-        'api/analyze-file',
+        '/api/analyze-file',
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' }

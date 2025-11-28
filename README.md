@@ -104,7 +104,19 @@ npm install
 
 ## Uso
 
-### Iniciar el Backend
+### Opción 1: Usar la Aplicación en Línea
+
+La aplicación está desplegada y disponible en línea sin necesidad de instalación:
+
+**[Acceder a Analizador de Código Go](https://jairp.pythonanywhere.com/)**
+
+Solo abre el enlace en tu navegador y comienza a analizar código Go inmediatamente.
+
+### Opción 2: Ejecutar Localmente
+
+Si prefieres ejecutar la aplicación en tu máquina local, sigue los pasos a continuación.
+
+#### Iniciar el Backend
 
 Desde la carpeta `backend`:
 ```bash
@@ -113,7 +125,7 @@ python app.py
 
 El servidor estará disponible en `http://localhost:5000`
 
-### Iniciar el Frontend
+#### Iniciar el Frontend
 
 Desde la carpeta `frontend`:
 ```bash

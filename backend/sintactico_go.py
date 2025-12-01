@@ -428,6 +428,8 @@ def p_empty(p):
 # ============================================================================
 
 def p_error(p):
+    global parser  
+    
     if p:
         error_obj = {
             'message': f"Error de sintaxis en '{p.value}'",
@@ -435,11 +437,11 @@ def p_error(p):
             'line': p.lineno
         }
         
-        if hasattr(p, 'parser') and hasattr(p.parser, 'errors_list'):
-            p.parser.errors_list.append(error_obj)
-
-        if hasattr(p, 'parser'):
-            p.parser.errok()
+       
+        if hasattr(parser, 'errors_list'):
+            parser.errors_list.append(error_obj)
+            
+        parser.errok() 
     else:
         error_obj = {
             'message': "Error de sintaxis: fin de archivo inesperado",
@@ -447,14 +449,9 @@ def p_error(p):
             'line': 0
         }
         
-        import inspect
-        frame = inspect.currentframe()
-        if frame and frame.f_back:
-            local_vars = frame.f_back.f_locals
-            if 'parser' in local_vars:
-                parser_obj = local_vars['parser']
-                if hasattr(parser_obj, 'errors_list'):
-                    parser_obj.errors_list.append(error_obj)
+        if hasattr(parser, 'errors_list'):
+            parser.errors_list.append(error_obj)
+
 
 # Construir el parser
 parser = yacc.yacc()
@@ -556,7 +553,7 @@ def analyze_file(filename):
         with open(log_filename, 'w', encoding='utf-8') as log_file:
             log_file.write(log_content)
         print(log_content)
-        print(f"\n✓ Log guardado en: {log_filename}")
+        print(f"\nLog guardado en: {log_filename}")
     except Exception as e:
         print(f"Error al guardar el log: {e}")
         print(log_content)

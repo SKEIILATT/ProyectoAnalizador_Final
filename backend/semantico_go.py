@@ -4,7 +4,7 @@ Proyecto: Implementación de un Analizador Semántico en Go
 Integrantes:
 - Jair Palaguachi (JairPalaguachi)
 - Javier Gutiérrez (SKEIILATT)
-
+- Leonardo Macias (leodamac)
 """
 
 import ply.yacc as yacc
@@ -89,16 +89,6 @@ FLOAT_TYPES = {'float32', 'float64'}
 
 ALLOWED_CONVERSIONS = {
     'int': NUMERIC_TYPES,
-    'int8': NUMERIC_TYPES,
-    'int16': NUMERIC_TYPES,
-    'int32': NUMERIC_TYPES,
-    'int64': NUMERIC_TYPES,
-    'uint': NUMERIC_TYPES,
-    'uint8': NUMERIC_TYPES,
-    'uint16': NUMERIC_TYPES,
-    'uint32': NUMERIC_TYPES,
-    'uint64': NUMERIC_TYPES,
-    'float32': NUMERIC_TYPES,
     'float64': NUMERIC_TYPES,
     'string': {'string', 'rune', 'byte'},
     'bool': {'bool'},
@@ -280,12 +270,38 @@ def p_asignacion(p):
                   | ID LBRACKET expresion RBRACKET ASSIGN expresion
                   | TIMES ID ASSIGN expresion'''
     global _symbol_table
-    var_name = p[2] if p[1] == '*' else p[1]
-    line = p.lineno(2) if p[1] == '*' else p.lineno(1)
+    
+    if p[1] == '*':
+        var_name = p[2]
+        line = p.lineno(2)
+    else:
+        var_name = p[1]
+        line = p.lineno(1)
     
     symbol = _symbol_table.lookup(var_name)
+    
     if not symbol:
-        add_error(f"Variable '{var_name}' no declarada", line)
+        add_error(f"Error Semántico: Variable '{var_name}' no declarada", line)
+        return
+
+    # VALIDACIÓN DE CONSTANTES
+    if symbol.is_const:
+        add_error(f"Error Semántico: No se puede asignar valor a la constante '{var_name}'", line)
+        return
+
+    # VALIDACIÓN DE TIPOS EN ASIGNACIÓN
+    if len(p) == 4 and isinstance(p[3], dict) and 'type' in p[3]:
+        tipo_variable = symbol.symbol_type
+        tipo_expresion = p[3]['type']
+
+        if tipo_variable != tipo_expresion and tipo_expresion != 'unknown':
+
+            if tipo_variable == 'composite' and (tipo_expresion == 'slice' or tipo_expresion == 'map'):
+                pass
+            elif tipo_variable == 'composite':
+                pass
+            else:
+                 add_error(f"Error Semántico: No se puede asignar tipo '{tipo_expresion}' a variable de tipo '{tipo_variable}'", line)
 
 def p_declaracion_const(p):
     '''declaracion_const : CONST ID ASSIGN expresion
@@ -322,14 +338,25 @@ def p_declaracion_var_multiple(p):
         # Caso: lista_ids DECLARE_ASSIGN lista_expresiones
         ids = p[1] if isinstance(p[1], list) else [p[1]]
         line = p.lineno(2)
+        
+        exprs = p[3] if isinstance(p[3], list) else []
 
-        for var_id in ids:
+        for i, var_id in enumerate(ids):
             if var_id != '_':
                 if _symbol_table.lookup_current_scope(var_id):
                     add_error(f"Variable '{var_id}' ya declarada", line)
                 else:
-                    # Asumimos tipo int por defecto para declaraciones cortas sin tipo explícito
-                    _symbol_table.insert(Symbol(var_id, 'int', None, 'local', line))
+                    # Inferencia de tipos básica
+                    inferred_type = 'int' # Default
+                    if i < len(exprs) and isinstance(exprs[i], dict):
+                        inferred_type = exprs[i].get('type', 'int')
+                        if inferred_type == 'unknown': inferred_type = 'int' 
+                    
+                    elif len(ids) == 2 and len(exprs) == 1 and i == 1:
+                        inferred_type = 'bool'
+                    # ----------------------------------------
+                    
+                    _symbol_table.insert(Symbol(var_id, inferred_type, None, 'local', line))
 
 def p_lista_ids(p):
     '''lista_ids : lista_ids COMMA ID
@@ -353,7 +380,7 @@ def p_parametros(p):
 def p_lista_parametros(p):
     '''lista_parametros : lista_parametros COMMA parametro
                         | parametro'''
-    if len(p) == 4:  # lista_parametros COMMA parametro
+    if len(p) == 4:  
         p[0] = p[1] + p[3] if p[3] is not None else p[1]
     else:  # parametro
         p[0] = p[1] if p[1] is not None else []
@@ -377,9 +404,9 @@ def p_parametro(p):
             else:
                 _symbol_table.insert(Symbol(param_name, param_type, None, 'parameter', line))
 
-        # Retornar lista con el tipo del parámetro
+        
         p[0] = [param_type]
-    elif len(p) == 5 and p[2] == ',':  # ID COMMA ID tipo (dos parámetros del mismo tipo)
+    elif len(p) == 5 and p[2] == ',':  
         param1 = p[1]
         param2 = p[3]
         param_type = p[4]
@@ -392,10 +419,10 @@ def p_parametro(p):
                 else:
                     _symbol_table.insert(Symbol(param_name, param_type, None, 'parameter', line))
 
-        # Retornar lista con dos tipos (ambos del mismo tipo)
+        
         p[0] = [param_type, param_type]
     else:
-        # Otros casos (ELLIPSIS, TIMES)
+        
         p[0] = ['unknown']
 
 def p_tipo_retorno(p):
@@ -441,7 +468,10 @@ def p_if_statement(p):
     '''if_statement : IF condicion bloque
                     | IF condicion bloque ELSE bloque
                     | IF condicion bloque ELSE if_statement'''
-    pass
+    if len(p) > 2 and isinstance(p[2], dict) and 'type' in p[2]:
+        tipo_condicion = p[2]['type']
+        if tipo_condicion != 'bool':
+            add_error(f"Error Semántico: La condición del IF debe ser 'bool', se encontró '{tipo_condicion}'", p.lineno(1))
 
 def p_condicion(p):
     '''condicion : expresion
@@ -449,41 +479,54 @@ def p_condicion(p):
     p[0] = p[1] if len(p) == 2 else p[3]
 
 def p_declaracion_var_corta(p):
-    '''declaracion_var_corta : ID DECLARE_ASSIGN expresion
-                             | lista_ids DECLARE_ASSIGN expresion'''
-    pass
+    '''declaracion_var_corta : ID DECLARE_ASSIGN lista_expresiones
+                             | lista_ids DECLARE_ASSIGN lista_expresiones'''
+    global _symbol_table
+    ids = [p[1]] if not isinstance(p[1], list) else p[1]
+    exprs = p[3] if isinstance(p[3], list) else [p[3]]
+    
+    line = p.lineno(2)
+    
+    for i, var_id in enumerate(ids):
+        if var_id != '_':
+            
+            
+            inferred_type = 'int'
+            if i < len(exprs) and isinstance(exprs[i], dict):
+                inferred_type = exprs[i].get('type', 'int')
+                if inferred_type == 'unknown': inferred_type = 'int'
+            
+
+            elif len(ids) == 2 and len(exprs) == 1 and i == 1:
+                inferred_type = 'bool'
+
+            _symbol_table.insert(Symbol(var_id, inferred_type, None, 'local', line))
+
+def p_for_range_decl(p):
+    '''for_range_decl : lista_ids DECLARE_ASSIGN RANGE expresion'''
+    global _symbol_table
+    ids = p[1]
+    line = p.lineno(2)
+    
+    if len(ids) > 0:
+        idx_name = ids[0]
+        if idx_name != '_':
+            _symbol_table.insert(Symbol(idx_name, 'int', None, 'local', line))
+            
+    if len(ids) > 1:
+        val_name = ids[1]
+        if val_name != '_':
+            _symbol_table.insert(Symbol(val_name, 'int', None, 'local', line))
 
 def p_for_statement(p):
     '''for_statement : FOR condicion bloque
                      | FOR bloque
                      | FOR inicializacion SEMICOLON condicion SEMICOLON incremento bloque
-                     | FOR ID COMMA ID DECLARE_ASSIGN RANGE expresion bloque
-                     | FOR ID DECLARE_ASSIGN RANGE expresion bloque
-                     | FOR ID COMMA ID ASSIGN RANGE expresion bloque
-                     | FOR UNDERSCORE COMMA ID DECLARE_ASSIGN RANGE expresion bloque
-                     | FOR ID COMMA UNDERSCORE DECLARE_ASSIGN RANGE expresion bloque
-                     | FOR UNDERSCORE COMMA UNDERSCORE DECLARE_ASSIGN RANGE expresion bloque'''
+                     | FOR for_range_decl bloque
+                     | FOR ID ASSIGN RANGE expresion bloque
+                     | FOR ID COMMA ID ASSIGN RANGE expresion bloque'''
     global _symbol_table, _inside_loop
-
-    # Incrementar contador de loops
     _inside_loop += 1
-
-    # Manejar for-range con declaración de variables
-    if len(p) >= 8 and 'RANGE' in [str(x) for x in p[1:]]:
-        # Buscar la posición de DECLARE_ASSIGN o ASSIGN
-        if p[4] == ':=' or (len(p) > 6 and p[6] == ':='):
-            # Declaración con :=
-            if p[2] != '_':  # Primera variable (índice)
-                line = p.lineno(2)
-                if not _symbol_table.lookup_current_scope(p[2]):
-                    _symbol_table.insert(Symbol(p[2], 'int', None, 'local', line))
-
-            if len(p) > 6 and p[4] == ',' and p[5] != '_':  # Segunda variable (valor)
-                line = p.lineno(5)
-                if not _symbol_table.lookup_current_scope(p[5]):
-                    # El tipo depende del tipo de la colección, asumimos int por simplicidad
-                    _symbol_table.insert(Symbol(p[5], 'int', None, 'local', line))
-
     _inside_loop -= 1
 
 def p_inicializacion(p):
@@ -503,17 +546,41 @@ def p_switch_statement(p):
     '''switch_statement : SWITCH expresion LBRACE casos RBRACE
                         | SWITCH LBRACE casos RBRACE
                         | SWITCH declaracion_var_corta SEMICOLON expresion LBRACE casos RBRACE'''
-    pass
+    
+    
+    if len(p) == 6 and p[2] != '{':
+        switch_expr_type = p[2].get('type', 'unknown') if isinstance(p[2], dict) else 'unknown'
+        case_types_list = p[4] if isinstance(p[4], list) else []
+        
+        for case_type in case_types_list:
+            if switch_expr_type != 'unknown' and case_type != 'unknown':
+                if switch_expr_type != case_type:
+                    
+                    add_error(f"Error Semántico: Tipo mismatch en case. Esperaba '{switch_expr_type}', recibió '{case_type}'", p.lineno(1))
+
+    
+    elif len(p) == 5:
+        case_types_list = p[3] if isinstance(p[3], list) else []
+        for case_type in case_types_list:
+            if case_type != 'bool' and case_type != 'unknown':
+                add_error(f"Error Semántico: En switch sin expresión, los casos deben ser booleanos, se encontró '{case_type}'", p.lineno(1))
 
 def p_casos(p):
     '''casos : casos caso
              | caso'''
-    pass
+    if len(p) == 3:
+        p[0] = p[1] + p[2] 
+    else:
+        p[0] = p[1]
 
 def p_caso(p):
     '''caso : CASE lista_expresiones COLON sentencias
             | DEFAULT COLON sentencias'''
-    pass
+    if p[1] == 'case':
+        types = [expr.get('type', 'unknown') for expr in p[2]] if isinstance(p[2], list) else []
+        p[0] = types
+    else:
+        p[0] = []
 
 def p_sentencia(p):
     '''sentencia : declaracion_var
@@ -553,31 +620,24 @@ def p_expresion_binaria(p):
                  | expresion RSHIFT expresion
                  | expresion AND_NOT expresion'''
 
-    # Obtener tipos de los operandos
     left_type = p[1].get('type', 'unknown') if isinstance(p[1], dict) else 'unknown'
     right_type = p[3].get('type', 'unknown') if isinstance(p[3], dict) else 'unknown'
     operator = p[2]
 
-    # Verificar compatibilidad de tipos
     if left_type != 'unknown' and right_type != 'unknown':
         if operator in ['<', '<=', '>', '>=', '==', '!=']:
-            # Operadores de comparación requieren tipos compatibles
             if left_type != right_type:
-                # Verificar si son tipos numéricos compatibles
                 if not (left_type in NUMERIC_TYPES and right_type in NUMERIC_TYPES):
-                    add_error(f"No se puede comparar tipo '{left_type}' con tipo '{right_type}'", p.lineno(2))
+                    add_error(f"Error Semántico: No se puede comparar tipo '{left_type}' con tipo '{right_type}'", p.lineno(2))
         elif operator in ['+', '-', '*', '/', '%']:
-            # Operadores aritméticos requieren tipos numéricos
             if operator == '+' and (left_type == 'string' or right_type == 'string'):
-                # Concatenación de strings permitida
                 pass
             elif left_type != right_type:
                 if not (left_type in NUMERIC_TYPES and right_type in NUMERIC_TYPES):
-                    add_error(f"Operación '{operator}' no válida entre tipo '{left_type}' y tipo '{right_type}'", p.lineno(2))
+                    add_error(f"Error Semántico: Operación '{operator}' no válida entre tipo '{left_type}' y tipo '{right_type}'", p.lineno(2))
         elif operator in ['&&', '||']:
-            # Operadores lógicos requieren bool
             if left_type != 'bool' or right_type != 'bool':
-                add_error(f"Operador lógico '{operator}' requiere operandos de tipo bool", p.lineno(2))
+                add_error(f"Error Semántico: Operador lógico '{operator}' requiere operandos de tipo bool", p.lineno(2))
 
     p[0] = {'type': 'bool' if operator in ['&&', '||', '==', '!=', '<', '<=', '>', '>='] else left_type}
 
@@ -631,37 +691,30 @@ def p_expresion_llamada(p):
                  | ID DOT ID LPAREN RPAREN'''
     global _symbol_table
 
-    # Determinar si es una llamada simple (ID(...)) o con punto (ID.ID(...))
-    if len(p) == 5:  # ID LPAREN ... RPAREN
+    if len(p) == 5:
         func_name = p[1]
         args = p[3] if p[3] is not None else []
         line = p.lineno(1)
 
-        # Buscar la función en la tabla de símbolos
         symbol = _symbol_table.lookup(func_name)
         if symbol and symbol.symbol_type == 'func':
-            # Obtener tipos de los argumentos pasados
             arg_types = [arg.get('type', 'unknown') for arg in args] if isinstance(args, list) else []
 
-            # Verificar número de argumentos
             if len(arg_types) != len(symbol.params):
-                add_error(f"Función '{func_name}' espera {len(symbol.params)} argumentos, pero se pasaron {len(arg_types)}", line)
+                add_error(f"Error Semántico: Función '{func_name}' espera {len(symbol.params)} argumentos, pero se pasaron {len(arg_types)}", line)
             else:
-                # Verificar tipos de argumentos
                 for i, (arg_type, param_type) in enumerate(zip(arg_types, symbol.params)):
                     if arg_type != 'unknown' and param_type != 'unknown':
                         if arg_type != param_type:
-                            # Verificar si son tipos numéricos compatibles
                             if not (arg_type in NUMERIC_TYPES and param_type in NUMERIC_TYPES):
-                                add_error(f"Argumento {i+1} de '{func_name}': se esperaba tipo '{param_type}', pero se recibió '{arg_type}'", line)
+                                add_error(f"Error Semántico: Argumento {i+1} de '{func_name}': se esperaba tipo '{param_type}', pero se recibió '{arg_type}'", line)
 
             p[0] = {'type': symbol.return_type if symbol.return_type else 'void'}
         elif not symbol:
-            # La función no está declarada (pero puede ser una función integrada)
             p[0] = {'type': 'unknown'}
         else:
             p[0] = {'type': 'void'}
-    else:  # ID DOT ID LPAREN ... RPAREN (llamada con punto, como fmt.Println)
+    else:
         p[0] = {'type': 'void'}
 
 def p_expresion_make(p):
@@ -736,11 +789,11 @@ def p_par_mapa(p):
 def p_lista_expresiones(p):
     '''lista_expresiones : lista_expresiones COMMA expresion
                          | expresion'''
-    if len(p) == 4:  # lista_expresiones COMMA expresion
+    if len(p) == 4:
         prev_list = p[1] if isinstance(p[1], list) else [p[1]]
         expr_type = p[3].get('type', 'unknown') if isinstance(p[3], dict) else 'unknown'
         p[0] = prev_list + [{'type': expr_type}]
-    else:  # expresion
+    else:
         expr_type = p[1].get('type', 'unknown') if isinstance(p[1], dict) else 'unknown'
         p[0] = [{'type': expr_type}]
 
@@ -749,22 +802,12 @@ def p_empty(p):
     pass
 
 def p_error(p):
-    # No agregamos errores de sintaxis aquí ya que eso lo maneja sintactico_go.py
-    # Solo manejamos la recuperación del parser
     if p and hasattr(p, 'parser'):
         p.parser.errok()
 
-# Construir parser
 parser = yacc.yacc()
 
-# ============================================================================
-# Para usar en API REST
-# ============================================================================
-
 def analyze_semantic_string(code_string):
-    """
-    Analiza semánticamente código Go recibido como string (para API).
-    """
     global _semantic_errors, _symbol_table, _current_function, _inside_loop
     
     _semantic_errors = []
@@ -787,12 +830,7 @@ def analyze_semantic_string(code_string):
         'symbol_table': _symbol_table.to_dict()
     }
 
-# ============================================================================
-# Para usar en CLI
-# ============================================================================
-
 def get_git_username():
-    """Obtiene el nombre de usuario de Git configurado localmente."""
     try:
         username = subprocess.check_output(
             ['git', 'config', 'user.name'],
@@ -803,7 +841,6 @@ def get_git_username():
         return 'usergit'
 
 def analyze_file(filename):
-    """Analiza semánticamente un archivo de código Go."""
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             data = file.read()
@@ -813,22 +850,15 @@ def analyze_file(filename):
     
     result = analyze_semantic_string(data)
     
-    # Crear carpeta de logs si no existe
     logs_dir = 'logs'
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
     
-    # Obtener nombre de usuario de Git
     git_username = get_git_username()
-    
-    # Extraer nombre del archivo sin extensión
     file_base = os.path.splitext(os.path.basename(filename))[0]
-    
-    # Generar nombre del archivo de log: semantico-usergit-algoritmo#-fecha-hora.log
     timestamp = datetime.now().strftime('%d-%m-%Y_%H-%M-%S')
     log_filename = os.path.join(logs_dir, f'semantico-{git_username}-{file_base}-{timestamp}.log')
     
-    # Preparar contenido del log
     log_content = f"\n{'='*80}\n"
     log_content += f"ANÁLISIS SEMÁNTICO DEL ARCHIVO: {filename}\n"
     log_content += f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -862,7 +892,6 @@ def analyze_file(filename):
                 if symbol['return_type']:
                     log_content += f"    Tipo de retorno: {symbol['return_type']}\n"
     
-    # Escribir en archivo de log
     try:
         with open(log_filename, 'w', encoding='utf-8') as log_file:
             log_file.write(log_content)

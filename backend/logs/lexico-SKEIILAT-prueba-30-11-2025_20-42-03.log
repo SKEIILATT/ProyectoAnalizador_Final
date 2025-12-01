@@ -1,0 +1,48 @@
+
+================================================================================
+ANÁLISIS LÉXICO DEL ARCHIVO: prueba.go
+Fecha: 2025-11-30 20:42:03
+Usuario: SKEIILAT
+================================================================================
+
+Token: PACKAGE              | Valor: package                        | Línea:    1 | Columna:    1
+Token: ID                   | Valor: main                           | Línea:    1 | Columna:    9
+Token: IMPORT               | Valor: import                         | Línea:    3 | Columna:    1
+Token: STRING_LITERAL       | Valor: fmt                            | Línea:    3 | Columna:    8
+Token: FUNC                 | Valor: func                           | Línea:    5 | Columna:    1
+Token: ID                   | Valor: main                           | Línea:    5 | Columna:    6
+Token: LPAREN               | Valor: (                              | Línea:    5 | Columna:    0
+Token: RPAREN               | Valor: )                              | Línea:    5 | Columna:    0
+Token: LBRACE               | Valor: {                              | Línea:    5 | Columna:    0
+Token: ID                   | Valor: permisos                       | Línea:    7 | Columna:    5
+Token: DECLARE_ASSIGN       | Valor: :=                             | Línea:    7 | Columna:    0
+Token: OCTAL_LITERAL        | Valor: 493                            | Línea:    7 | Columna:   17
+Token: ID                   | Valor: lectura                        | Línea:    8 | Columna:    5
+Token: DECLARE_ASSIGN       | Valor: :=                             | Línea:    8 | Columna:    0
+Token: OCTAL_LITERAL        | Valor: 420                            | Línea:    8 | Columna:   16
+Token: ID                   | Valor: decimal                        | Línea:   11 | Columna:    5
+Token: DECLARE_ASSIGN       | Valor: :=                             | Línea:   11 | Columna:    0
+Token: INT_LITERAL          | Valor: 123                            | Línea:   11 | Columna:   16
+Token: ID                   | Valor: hex                            | Línea:   12 | Columna:    5
+Token: DECLARE_ASSIGN       | Valor: :=                             | Línea:   12 | Columna:    0
+Token: INT_LITERAL          | Valor: 0                              | Línea:   12 | Columna:   12
+Token: ID                   | Valor: xFF                            | Línea:   12 | Columna:   13
+Token: ID                   | Valor: fmt                            | Línea:   14 | Columna:    5
+Token: DOT                  | Valor: .                              | Línea:   14 | Columna:    0
+Token: ID                   | Valor: Println                        | Línea:   14 | Columna:    9
+Token: LPAREN               | Valor: (                              | Línea:   14 | Columna:    0
+Token: ID                   | Valor: permisos                       | Línea:   14 | Columna:   17
+Token: COMMA                | Valor: ,                              | Línea:   14 | Columna:    0
+Token: ID                   | Valor: lectura                        | Línea:   14 | Columna:   27
+Token: COMMA                | Valor: ,                              | Línea:   14 | Columna:    0
+Token: ID                   | Valor: decimal                        | Línea:   14 | Columna:   36
+Token: COMMA                | Valor: ,                              | Línea:   14 | Columna:    0
+Token: ID                   | Valor: hex                            | Línea:   14 | Columna:   45
+Token: RPAREN               | Valor: )                              | Línea:   14 | Columna:    0
+Token: RBRACE               | Valor: }                              | Línea:   15 | Columna:    0
+
+================================================================================
+RESUMEN DEL ANÁLISIS
+================================================================================
+Total de tokens reconocidos: 35
+Total de errores encontrados: 0

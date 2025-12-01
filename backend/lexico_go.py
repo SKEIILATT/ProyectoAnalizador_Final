@@ -58,7 +58,7 @@ tokens = [
     'LSHIFT_ASSIGN', 'RSHIFT_ASSIGN', 'BITAND', 'BITOR', 'BITXOR', 'BITNOT',
     'LSHIFT', 'RSHIFT', 'AND_NOT', 'ADDRESS', 'POINTER', 'CHANNEL_OP',
     'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET',
-    'SEMICOLON', 'COMMA', 'DOT', 'COLON', 'ELLIPSIS',
+    'SEMICOLON', 'COMMA', 'DOT', 'COLON', 'ELLIPSIS', 'OCTAL_LITERAL',
 ] + list(reserved.values())
 
 # Tokens simples
@@ -117,6 +117,12 @@ def t_FLOAT_LITERAL(t):
     t.value = float(t.value)
     return t
 
+#Literales octales
+def t_OCTAL_LITERAL(t):
+    r'(0o|0O)[0-7]+'
+    t.value = int(t.value,0)
+    return t
+    
 # Literales enteros
 def t_INT_LITERAL(t):
     r'\d+'
@@ -179,7 +185,7 @@ def t_error(t):
     
     t.lexer.skip(1)
 
-# Función auxiliar para encontrar la columna - CORREGIDA
+# Función auxiliar para encontrar la columna
 def find_column(token):
     if hasattr(token, 'lexer') and hasattr(token.lexer, 'source_code'):
         lexer_data = token.lexer.source_code
